@@ -764,18 +764,39 @@
   const ENTRY_P4  = 'entry.1992085960';
 
   function submitToForms() {
-    const nom = prompt('Escriu el teu nom i cognom:');
-    if (!nom) return;
-
     const r1 = document.getElementById('resp1').value;
     const r2 = document.getElementById('resp2').value;
     const r3 = document.getElementById('resp3').value;
     const r4 = document.getElementById('resp4').value;
 
     if (!r1 && !r2 && !r3 && !r4) {
-      alert('Escriu almenys una resposta abans d\'enviar.');
+      mostrarAvis('Escriu almenys una resposta abans d\'enviar.');
       return;
     }
+
+    // Mostra modal personalitzat
+    const modal = document.getElementById('modalNom');
+    modal.style.display = 'flex';
+    document.getElementById('inputNom').value = '';
+    document.getElementById('inputNom').focus();
+  }
+
+  function tancarModal() {
+    document.getElementById('modalNom').style.display = 'none';
+  }
+
+  function confirmarNom() {
+    const nom = document.getElementById('inputNom').value.trim();
+    if (!nom) {
+      document.getElementById('inputNom').style.borderColor = '#8b2d1a';
+      return;
+    }
+    tancarModal();
+
+    const r1 = document.getElementById('resp1').value;
+    const r2 = document.getElementById('resp2').value;
+    const r3 = document.getElementById('resp3').value;
+    const r4 = document.getElementById('resp4').value;
 
     const url = 'https://docs.google.com/forms/d/e/' + FORM_ID + '/viewform?'
       + ENTRY_NOM + '=' + encodeURIComponent(nom)
@@ -786,7 +807,36 @@
 
     window.open(url, '_blank');
   }
+
+  function mostrarAvis(msg) {
+    const div = document.createElement('div');
+    div.textContent = msg;
+    div.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:#8b2d1a;color:#e8dcc8;padding:1rem 2rem;font-family:Cinzel,serif;font-size:0.85rem;letter-spacing:0.15em;z-index:9999;';
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
+  }
+
+  // Enter al camp de nom confirma
+  document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('modalNom');
+    if (modal && modal.style.display === 'flex' && e.key === 'Enter') confirmarNom();
+    if (modal && modal.style.display === 'flex' && e.key === 'Escape') tancarModal();
+  });
 </script>
+
+<!-- MODAL NOM INVESTIGADOR -->
+<div id="modalNom" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.78);align-items:center;justify-content:center;">
+  <div style="background:#2a2118;border:2px solid #c9a84c;padding:2.5rem 3rem;max-width:480px;width:90%;text-align:center;font-family:'Cormorant Garamond',serif;box-shadow:0 0 50px rgba(0,0,0,0.9);">
+    <div style="font-family:'Cinzel',serif;color:#c9a84c;letter-spacing:0.3em;font-size:0.8rem;margin-bottom:1rem;">PRAEFECTURA IUDAEAE</div>
+    <div style="font-family:'Cinzel',serif;color:#e8dcc8;font-size:1.5rem;margin-bottom:0.6rem;">Identifica l'Investigador</div>
+    <div style="color:#9a8070;font-size:1rem;margin-bottom:1.8rem;font-style:italic;">Escriu el teu nom i cognom<br>abans de signar l'informe</div>
+    <input id="inputNom" type="text" placeholder="Nom i Cognom..." style="width:100%;padding:0.8rem 1rem;background:#1a1410;border:1px solid #c9a84c;color:#e8dcc8;font-family:'Cormorant Garamond',serif;font-size:1.15rem;outline:none;margin-bottom:1.8rem;box-sizing:border-box;">
+    <div style="display:flex;gap:1rem;justify-content:center;">
+      <button onclick="tancarModal()" style="padding:0.7rem 1.8rem;background:transparent;border:1px solid #5c4a38;color:#9a8070;font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.2em;cursor:pointer;">CANCEL·LAR</button>
+      <button onclick="confirmarNom()" style="padding:0.7rem 1.8rem;background:#8b2d1a;border:1px solid #8b2d1a;color:#e8dcc8;font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.2em;cursor:pointer;">SIGNAR I ENVIAR</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
