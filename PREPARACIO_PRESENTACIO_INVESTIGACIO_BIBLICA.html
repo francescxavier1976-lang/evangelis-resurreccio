@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Preparació de la Presentació — Investigació Bíblica</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root {
+  --cream: #FAF8F4;
+  --warm-white: #FFFFFF;
+  --ink: #1C1714;
+  --ink-mid: #4A3F35;
+  --ink-light: #8B7B6E;
+  --accent: #8B4513;
+  --accent-light: #C4724A;
+  --accent-pale: #F5EDE6;
+  --gold: #B8860B;
+  --gold-pale: #FDF6E3;
+  --border: #DDD5C8;
+  --border-light: #EDE6DC;
+  --ok: #2D6A4F;
+  --ok-pale: #E8F5EE;
+  --error: #9B2335;
+  --error-pale: #FDECEA;
+  --shadow: rgba(28,23,20,0.08);
+  --shadow-md: rgba(28,23,20,0.14);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--cream);
+  font-family: 'Source Serif 4', Georgia, serif;
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-bar {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  background: var(--warm-white);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 2rem; height: 52px;
+  gap: 0;
+}
+.progress-step {
+  display: flex; align-items: center; gap: .5rem;
+  font-size: .75rem; font-weight: 600;
+  color: var(--ink-light);
+  letter-spacing: .04em; text-transform: uppercase;
+  padding: 0 1rem;
+  transition: color .3s;
+}
+.progress-step.active { color: var(--accent); }
+.progress-step.done { color: var(--ok); }
+.progress-step .dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700;
+  flex-shrink: 0;
+  transition: all .3s;
+}
+.progress-step.active .dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+.progress-step.done .dot { border-color: var(--ok); background: var(--ok); color: #fff; }
+.progress-sep { width: 1px; height: 20px; background: var(--border); flex-shrink:0; }
+
+/* ── MAIN LAYOUT ── */
+.main { max-width: 780px; margin: 0 auto; padding: 80px 2rem 4rem; }
+
+/* ── SCREEN ── */
+.screen { display: none; animation: fadeIn .4s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.phase-label {
+  font-size: .7rem; font-weight: 600; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: .5rem;
+}
+.page-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.9rem; font-weight: 600;
+  color: var(--ink); line-height: 1.2;
+  margin-bottom: .5rem;
+}
+.page-subtitle {
+  font-size: 1rem; color: var(--ink-mid);
+  font-style: italic; line-height: 1.5;
+}
+
+/* ── FIELD ── */
+.field { margin-bottom: 1.8rem; }
+.field-label {
+  display: block;
+  font-size: .8rem; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-mid);
+  margin-bottom: .5rem;
+}
+.field-hint {
+  font-size: .85rem; color: var(--ink-light);
+  font-style: italic; margin-bottom: .6rem;
+  line-height: 1.5;
+}
+input[type="text"], textarea, select {
+  width: 100%;
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--warm-white);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: .75rem 1rem;
+  transition: border-color .2s, box-shadow .2s;
+  outline: none;
+  line-height: 1.6;
+}
+input[type="text"]:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(139,69,19,.1);
+}
+input[type="text"].error, textarea.error {
+  border-color: var(--error);
+  box-shadow: 0 0 0 3px rgba(155,35,53,.08);
+}
+textarea { resize: vertical; min-height: 100px; }
+
+/* ── INVESTIGATORS GRID ── */
+.inv-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem; margin-bottom: 1rem;
+}
+.inv-grid input { font-size: .95rem; }
+@media (max-width: 600px) { .inv-grid { grid-template-columns: 1fr; } }
+
+/* ── CASE SELECTOR ── */
+.case-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: .75rem; margin-bottom: .5rem;
+}
+@media (max-width: 600px) { .case-grid { grid-template-columns: 1fr 1fr; } }
+.case-btn {
+  border: 1.5px solid var(--border);
+  background: var(--warm-white);
+  border-radius: 6px; padding: .75rem .5rem;
+  text-align: center; cursor: pointer;
+  transition: all .2s; line-height: 1.3;
+}
+.case-btn:hover { border-color: var(--accent-light); background: var(--accent-pale); }
+.case-btn.selected { border-color: var(--accent); background: var(--accent-pale); box-shadow: 0 0 0 3px rgba(139,69,19,.12); }
+.case-btn .case-num { font-size: .7rem; font-weight: 700; color: var(--accent); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .25rem; }
+.case-btn .case-name { font-size: .85rem; font-weight: 600; color: var(--ink); }
+.case-btn .case-ref { font-size: .72rem; color: var(--ink-light); font-style: italic; }
+
+/* ── SECTION CARD ── */
+.section-card {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.section-card-header {
+  background: var(--accent-pale);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+.section-num {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem; font-weight: 600;
+  color: var(--ink);
+}
+.section-desc { font-size: .85rem; color: var(--ink-mid); font-style: italic; margin-top: .1rem; }
+.section-body { padding: 1.5rem; }
+
+/* ── TIME HINT ── */
+.time-hint {
+  background: var(--gold-pale);
+  border: 1px solid rgba(184,134,11,.25);
+  border-radius: 6px;
+  padding: .75rem 1rem;
+  margin-bottom: 1.5rem;
+  display: flex; align-items: flex-start; gap: .75rem;
+}
+.time-hint-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: .05rem; }
+.time-hint-text { font-size: .85rem; color: var(--ink-mid); line-height: 1.5; }
+.time-hint-text strong { color: var(--gold); }
+
+/* ── ROL CARDS ── */
+.rol-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+@media (max-width: 600px) { .rol-grid { grid-template-columns: 1fr; } }
+.rol-card {
+  border: 1px solid var(--border);
+  border-radius: 6px; padding: 1rem;
+  background: var(--cream);
+}
+.rol-label { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: .25rem; }
+.rol-name { font-size: .85rem; font-weight: 600; color: var(--ink); margin-bottom: .5rem; }
+.rol-card textarea { min-height: 140px; font-size: .9rem; }
+
+/* ── ERROR MSG ── */
+.error-msg {
+  background: var(--error-pale);
+  border: 1px solid rgba(155,35,53,.25);
+  border-radius: 6px;
+  padding: .75rem 1rem;
+  font-size: .85rem; color: var(--error);
+  margin-bottom: 1rem;
+  display: none;
+}
+.error-msg.visible { display: block; }
+
+/* ── BUTTONS ── */
+.btn-row { display: flex; gap: 1rem; margin-top: 2rem; align-items: center; }
+.btn {
+  font-family: 'Source Serif 4', serif;
+  font-size: .9rem; font-weight: 600;
+  padding: .75rem 2rem;
+  border-radius: 4px; border: none; cursor: pointer;
+  transition: all .2s; letter-spacing: .02em;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #7A3B0F; }
+.btn-primary:disabled { background: var(--border); color: var(--ink-light); cursor: not-allowed; }
+.btn-secondary { background: transparent; color: var(--ink-mid); border: 1.5px solid var(--border); }
+.btn-secondary:hover { border-color: var(--ink-mid); }
+.btn-download { background: var(--ok); color: #fff; font-size: 1rem; padding: .9rem 2.5rem; }
+.btn-download:hover { background: #1E4D38; }
+
+/* ── SUMMARY ── */
+.summary-block {
+  background: var(--warm-white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+.summary-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem; font-weight: 600;
+  color: var(--accent);
+  margin-bottom: .75rem;
+  padding-bottom: .5rem;
+  border-bottom: 1px solid var(--border-light);
+}
+.summary-row { margin-bottom: .6rem; }
+.summary-label { font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-light); }
+.summary-val { font-size: .95rem; color: var(--ink); line-height: 1.5; margin-top: .1rem; }
+
+/* ── FINAL SCREEN ── */
+.congrats {
+  text-align: center; padding: 2rem 0;
+}
+.congrats-icon { font-size: 3rem; margin-bottom: 1rem; }
+.congrats h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--ink); margin-bottom: .5rem; }
+.congrats p { color: var(--ink-mid); font-size: 1rem; line-height: 1.6; max-width: 480px; margin: 0 auto 2rem; }
+</style>
+</head>
+<body>
+
+<!-- PROGRESS BAR -->
+<nav class="progress-bar">
+  <div class="progress-step active" id="ps0"><div class="dot">1</div><span>Grup</span></div>
+  <div class="progress-sep"></div>
+  <div class="progress-step" id="ps1"><div class="dot">2</div><span>Contingut</span></div>
+  <div class="progress-sep"></div>
+  <div class="progress-step" id="ps2"><div class="dot">3</div><span>Organització</span></div>
+  <div class="progress-sep"></div>
+  <div class="progress-step" id="ps3"><div class="dot">4</div><span>Revisió</span></div>
+</nav>
+
+<main class="main">
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 0: GRUP -->
+<!-- ══════════════════════════════════════════ -->
+<section class="screen active" id="screen-0">
+  <div class="page-header">
+    <div class="phase-label">Inici</div>
+    <h1 class="page-title">Preparació de la Presentació Oral</h1>
+    <p class="page-subtitle">Completeu aquest document pas a pas. Al final generareu un PDF que haureu d'enviar al professor.</p>
+  </div>
+
+  <div class="field">
+    <label class="field-label">Nom del cas investigat</label>
+    <div class="case-grid">
+      <div class="case-btn" onclick="selectCase(this,'L\'Adultera','Jn 8')">
+        <div class="case-num">Cas I</div>
+        <div class="case-name">L'Adultera</div>
+        <div class="case-ref">Jn 8</div>
+      </div>
+      <div class="case-btn" onclick="selectCase(this,'El Leprós','Mc 1')">
+        <div class="case-num">Cas II</div>
+        <div class="case-name">El Leprós</div>
+        <div class="case-ref">Mc 1</div>
+      </div>
+      <div class="case-btn" onclick="selectCase(this,'El Fariseu','Mc 3')">
+        <div class="case-num">Cas III</div>
+        <div class="case-name">El Fariseu</div>
+        <div class="case-ref">Mc 3</div>
+      </div>
+      <div class="case-btn" onclick="selectCase(this,'El Temple','Jn 2')">
+        <div class="case-num">Cas IV</div>
+        <div class="case-name">El Temple</div>
+        <div class="case-ref">Jn 2</div>
+      </div>
+      <div class="case-btn" onclick="selectCase(this,'La Dona Pecadora','Lc 7')">
+        <div class="case-num">Cas V</div>
+        <div class="case-name">La Dona Pecadora</div>
+        <div class="case-ref">Lc 7</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="field-label">Noms dels investigadors</label>
+    <p class="field-hint">Ompliu els tres camps. Tots els membres del grup han de constar.</p>
+    <div class="inv-grid">
+      <input type="text" id="inv1" placeholder="Investigador 1 — nom i cognoms">
+      <input type="text" id="inv2" placeholder="Investigador 2 — nom i cognoms">
+      <input type="text" id="inv3" placeholder="Investigador 3 — nom i cognoms">
+    </div>
+  </div>
+
+  <div class="error-msg" id="err-0">Heu d'escollir el cas i omplir els tres noms abans de continuar.</div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="goNext(0)">Continuar →</button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 1: CONTINGUT -->
+<!-- ══════════════════════════════════════════ -->
+<section class="screen" id="screen-1">
+  <div class="page-header">
+    <div class="phase-label">Fase 1 — Contingut</div>
+    <h1 class="page-title">Què explicareu?</h1>
+    <p class="page-subtitle">Prepareu el contingut de la presentació bloc a bloc. La presentació ha de durar entre 10 i 15 minuts.</p>
+  </div>
+
+  <div class="time-hint">
+    <div class="time-hint-icon">⏱</div>
+    <div class="time-hint-text">
+      <strong>Distribució de temps suggerida:</strong> Personatges 2' · Situació 3' · Gest rupturista 3' · Conclusions 4' · Preguntes 1-2'. No és obligatòria, però ajuda a no passar-se de temps.
+    </div>
+  </div>
+
+  <!-- BLOC 1 -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <div class="section-num">1</div>
+      <div>
+        <div class="section-title">Els personatges</div>
+        <div class="section-desc">Qui hi ha en aquesta escena, i quin és el seu lloc en la societat del segle I?</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <p class="field-hint">Per a cada personatge principal, expliqueu breument qui és i quin estatus social tenia en aquella època (p. ex: fariseu = autoritat religiosa i legal; dona = sense veu legal; leprós = exclòs ritualment). No cal que sigui llarg — una frase per personatge és suficient.</p>
+        <textarea id="b1" placeholder="Escriviu aquí els personatges i el seu estatus..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOC 2 -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <div class="section-num">2</div>
+      <div>
+        <div class="section-title">La situació</div>
+        <div class="section-desc">Relateu el que ha passat en el vostre cas.</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <p class="field-hint">Expliqueu els fets tal com els heu reconstruït a la fitxa d'investigació. Qui fa què, en quin ordre, i com acaba l'episodi. Ha de ser un relat clar, no una llista.</p>
+        <textarea id="b2" placeholder="Relateu la situació que heu investigat..." style="min-height:130px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOC 3 -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <div class="section-num">3</div>
+      <div>
+        <div class="section-title">El gest rupturista</div>
+        <div class="section-desc">Per què el que fa Jesús escandalitza en el seu context?</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <p class="field-hint">Tenint en compte el que heu après sobre la societat del segle I (la Llei, el paper de la dona, l'exclusió dels marginats...), expliqueu per quin motiu el gest de Jesús trenca les normes del seu temps. Què hauria hagut de fer, i què fa en canvi?</p>
+        <textarea id="b3" placeholder="Expliqueu per què el gest de Jesús és rupturista..." style="min-height:130px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLOC 4: CONCLUSIONS -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <div class="section-num">4</div>
+      <div>
+        <div class="section-title">Les conclusions individuals</div>
+        <div class="section-desc">Cada investigador exposa la seva conclusió personal.</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <p class="field-hint" style="margin-bottom:1rem;">Copieu o reescriviu les conclusions que cadascú va escriure a la fitxa d'investigació. Cada investigador les exposarà en veu alta.</p>
+      <div class="rol-grid" id="rol-grid">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <div class="error-msg" id="err-1">Heu d'omplir tots els blocs abans de continuar.</div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goPrev(1)">← Tornar</button>
+    <button class="btn btn-primary" onclick="goNext(1)">Continuar →</button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 2: ORGANITZACIÓ -->
+<!-- ══════════════════════════════════════════ -->
+<section class="screen" id="screen-2">
+  <div class="page-header">
+    <div class="phase-label">Fase 2 — Organització</div>
+    <h1 class="page-title">Com us organitzareu?</h1>
+    <p class="page-subtitle">Repartiu els blocs entre els membres del grup i penseu en els detalls pràctics.</p>
+  </div>
+
+  <!-- REPARTIMENT -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <div class="section-num">A</div>
+      <div>
+        <div class="section-title">Repartiment de rols</div>
+        <div class="section-desc">Qui parla de cada bloc durant la presentació?</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <p class="field-hint" style="margin-bottom:1rem;">Per a cada bloc, escriviu el nom de qui l'exposarà. Un mateix membre pot exposar més d'un bloc si el grup ho decideix.</p>
+
+      <div class="field">
+        <label class="field-label">Bloc 1 — Els personatges</label>
+        <input type="text" id="r1" placeholder="Qui exposarà aquest bloc?">
+      </div>
+      <div class="field">
+        <label class="field-label">Bloc 2 — La situació</label>
+        <input type="text" id="r2" placeholder="Qui exposarà aquest bloc?">
+      </div>
+      <div class="field">
+        <label class="field-label">Bloc 3 — El gest rupturista</label>
+        <input type="text" id="r3" placeholder="Qui exposarà aquest bloc?">
+      </div>
+      <div class="field">
+        <label class="field-label">Bloc 4 — Conclusions individuals</label>
+        <p class="field-hint">Cada investigador exposa la seva conclusió. No cal que anoteu res aquí.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUPORT VISUAL -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <div class="section-num">B</div>
+      <div>
+        <div class="section-title">Suport visual</div>
+        <div class="section-desc">La presentació ha d'anar acompanyada d'un suport visual (Canva, PowerPoint o similar).</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <label class="field-label">Eina que fareu servir</label>
+        <select id="tool">
+          <option value="">— Seleccioneu —</option>
+          <option>Canva</option>
+          <option>PowerPoint</option>
+          <option>Google Slides</option>
+          <option>Una altra eina</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Contingut previst per al suport visual</label>
+        <p class="field-hint">Descriviu breument quines diapositives o seccions tindreu (no cal que sigui definitiu, però cal que ho hagueu pensat).</p>
+        <textarea id="visual" placeholder="Ex: Una diapositiva per als personatges, una per a la situació, una imatge de l'escena, les conclusions..." style="min-height:90px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFLEXIÓ -->
+  <div class="section-card">
+    <div class="section-card-header">
+      <div class="section-num">C</div>
+      <div>
+        <div class="section-title">Reflexió del grup</div>
+        <div class="section-desc">Una pregunta per a tothom.</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="field">
+        <p class="field-hint" style="font-style:normal; font-weight:600; color: var(--ink); margin-bottom:.5rem;">Què és el que més us ha sorprès d'aquesta investigació?</p>
+        <p class="field-hint">Responeu junts com a grup. No hi ha respostes correctes ni incorrectes.</p>
+        <textarea id="refl" placeholder="Escriviu la vostra resposta aquí..." style="min-height:90px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-msg" id="err-2">Heu d'omplir el repartiment dels blocs 1, 2 i 3, escollir l'eina i respondre la reflexió.</div>
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="goPrev(2)">← Tornar</button>
+    <button class="btn btn-primary" onclick="goNext(2)">Revisar →</button>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════ -->
+<!-- SCREEN 3: REVISIÓ + DESCÀRREGA -->
+<!-- ══════════════════════════════════════════ -->
+<section class="screen" id="screen-3">
+  <div class="page-header">
+    <div class="phase-label">Fase 3 — Revisió</div>
+    <h1 class="page-title">Reviseu i descarregueu</h1>
+    <p class="page-subtitle">Comproveu que tot és correcte. Quan esteu llestos, genereu el PDF i envieu-lo al professor.</p>
+  </div>
+
+  <div id="summary-container"></div>
+
+  <div class="congrats">
+    <div class="congrats-icon">📄</div>
+    <h2>Tot llest!</h2>
+    <p>Descarregueu el document i envieu-lo al professor pel Classroom. Recordeu que la presentació ha de durar entre <strong>10 i 15 minuts</strong>.</p>
+    <div class="btn-row" style="justify-content:center;">
+      <button class="btn btn-secondary" onclick="goPrev(3)">← Tornar a editar</button>
+      <button class="btn btn-download" onclick="generatePDF()">⬇ Descarregar PDF</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────
+const state = {
+  cas: '', casRef: '',
+  inv: ['', '', ''],
+  b1: '', b2: '', b3: '',
+  c1: '', c2: '', c3: '',
+  r1: '', r2: '', r3: '',
+  tool: '', visual: '', refl: ''
+};
+
+// ── CASE SELECTION ─────────────────────────────────────────
+function selectCase(el, name, ref) {
+  document.querySelectorAll('.case-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.cas = name;
+  state.casRef = ref;
+}
+
+// ── PROGRESS ───────────────────────────────────────────────
+function setProgress(step) {
+  for (let i = 0; i < 4; i++) {
+    const el = document.getElementById('ps' + i);
+    el.classList.remove('active', 'done');
+    if (i < step) el.classList.add('done');
+    else if (i === step) el.classList.add('active');
+  }
+}
+
+function showScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + n).classList.add('active');
+  setProgress(n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── ROL GRID (dynamic names) ───────────────────────────────
+function buildRolGrid() {
+  const names = [
+    document.getElementById('inv1').value.trim() || 'Investigador 1',
+    document.getElementById('inv2').value.trim() || 'Investigador 2',
+    document.getElementById('inv3').value.trim() || 'Investigador 3',
+  ];
+  const rols = ['Fets', 'Persones', 'Reflexió'];
+  const grid = document.getElementById('rol-grid');
+  grid.innerHTML = names.map((n, i) => `
+    <div class="rol-card">
+      <div class="rol-label">Investigador ${i+1} — ${rols[i]}</div>
+      <div class="rol-name">${n}</div>
+      <textarea id="c${i+1}" placeholder="Conclusió personal de ${n.split(' ')[0]}...">${state['c'+(i+1)]}</textarea>
+    </div>
+  `).join('');
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────
+function goNext(from) {
+  // Save current values
+  if (from === 0) {
+    state.inv[0] = document.getElementById('inv1').value.trim();
+    state.inv[1] = document.getElementById('inv2').value.trim();
+    state.inv[2] = document.getElementById('inv3').value.trim();
+    // Validate
+    const err = !state.cas || !state.inv[0] || !state.inv[1] || !state.inv[2];
+    document.getElementById('err-0').classList.toggle('visible', err);
+    ['inv1','inv2','inv3'].forEach(id => {
+      document.getElementById(id).classList.toggle('error', !document.getElementById(id).value.trim());
+    });
+    if (err) return;
+    buildRolGrid();
+    showScreen(1);
+  } else if (from === 1) {
+    state.b1 = document.getElementById('b1').value.trim();
+    state.b2 = document.getElementById('b2').value.trim();
+    state.b3 = document.getElementById('b3').value.trim();
+    state.c1 = document.getElementById('c1') ? document.getElementById('c1').value.trim() : '';
+    state.c2 = document.getElementById('c2') ? document.getElementById('c2').value.trim() : '';
+    state.c3 = document.getElementById('c3') ? document.getElementById('c3').value.trim() : '';
+    const err = !state.b1 || !state.b2 || !state.b3 || !state.c1 || !state.c2 || !state.c3;
+    document.getElementById('err-1').classList.toggle('visible', err);
+    ['b1','b2','b3','c1','c2','c3'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('error', !el.value.trim());
+    });
+    if (err) return;
+    showScreen(2);
+  } else if (from === 2) {
+    state.r1 = document.getElementById('r1').value.trim();
+    state.r2 = document.getElementById('r2').value.trim();
+    state.r3 = document.getElementById('r3').value.trim();
+    state.tool = document.getElementById('tool').value;
+    state.visual = document.getElementById('visual').value.trim();
+    state.refl = document.getElementById('refl').value.trim();
+    const err = !state.r1 || !state.r2 || !state.r3 || !state.tool || !state.refl;
+    document.getElementById('err-2').classList.toggle('visible', err);
+    ['r1','r2','r3'].forEach(id => {
+      document.getElementById(id).classList.toggle('error', !document.getElementById(id).value.trim());
+    });
+    if (err) return;
+    buildSummary();
+    showScreen(3);
+  }
+}
+
+function goPrev(from) {
+  if (from === 1) { showScreen(0); }
+  else if (from === 2) { showScreen(1); }
+  else if (from === 3) { showScreen(2); }
+}
+
+// ── SUMMARY ────────────────────────────────────────────────
+function buildSummary() {
+  const names = state.inv.join(' · ');
+  const rols = ['Fets', 'Persones', 'Reflexió'];
+  const conclusions = [state.c1, state.c2, state.c3];
+  const html = `
+    <div class="summary-block">
+      <div class="summary-title">Identificació del grup</div>
+      <div class="summary-row"><div class="summary-label">Cas</div><div class="summary-val">${state.cas} (${state.casRef})</div></div>
+      <div class="summary-row"><div class="summary-label">Investigadors</div><div class="summary-val">${names}</div></div>
+    </div>
+    <div class="summary-block">
+      <div class="summary-title">Bloc 1 — Els personatges</div>
+      <div class="summary-val">${state.b1.replace(/\n/g,'<br>')}</div>
+    </div>
+    <div class="summary-block">
+      <div class="summary-title">Bloc 2 — La situació</div>
+      <div class="summary-val">${state.b2.replace(/\n/g,'<br>')}</div>
+    </div>
+    <div class="summary-block">
+      <div class="summary-title">Bloc 3 — El gest rupturista</div>
+      <div class="summary-val">${state.b3.replace(/\n/g,'<br>')}</div>
+    </div>
+    <div class="summary-block">
+      <div class="summary-title">Bloc 4 — Conclusions individuals</div>
+      ${state.inv.map((n,i) => `
+        <div class="summary-row">
+          <div class="summary-label">${n} — ${rols[i]}</div>
+          <div class="summary-val">${conclusions[i].replace(/\n/g,'<br>')}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="summary-block">
+      <div class="summary-title">Organització</div>
+      <div class="summary-row"><div class="summary-label">Bloc 1 exposa</div><div class="summary-val">${state.r1}</div></div>
+      <div class="summary-row"><div class="summary-label">Bloc 2 exposa</div><div class="summary-val">${state.r2}</div></div>
+      <div class="summary-row"><div class="summary-label">Bloc 3 exposa</div><div class="summary-val">${state.r3}</div></div>
+      <div class="summary-row"><div class="summary-label">Eina visual</div><div class="summary-val">${state.tool}</div></div>
+      ${state.visual ? `<div class="summary-row"><div class="summary-label">Contingut visual previst</div><div class="summary-val">${state.visual.replace(/\n/g,'<br>')}</div></div>` : ''}
+    </div>
+    <div class="summary-block">
+      <div class="summary-title">Reflexió del grup</div>
+      <div class="summary-val">${state.refl.replace(/\n/g,'<br>')}</div>
+    </div>
+  `;
+  document.getElementById('summary-container').innerHTML = html;
+}
+
+// ── PDF GENERATION ─────────────────────────────────────────
+function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  const W = 210, ML = 20, MR = 20, CW = W - ML - MR;
+  let y = 20;
+  const LINE_H = 6;
+
+  function checkPage(needed = 10) {
+    if (y + needed > 275) { doc.addPage(); y = 20; }
+  }
+
+  // Header
+  doc.setFillColor(139, 69, 19);
+  doc.rect(0, 0, W, 14, 'F');
+  doc.setTextColor(255, 245, 230);
+  doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+  doc.text('PREPARACIÓ DE LA PRESENTACIÓ ORAL — INVESTIGACIÓ BÍBLICA', ML, 9);
+  doc.setTextColor(200, 160, 100);
+  doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+  doc.text('4t ESO · Religió Catòlica · INS Flix', W - MR, 9, { align: 'right' });
+  y = 24;
+
+  // Title block
+  doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(28, 23, 20);
+  doc.text(`CAS ${state.cas.toUpperCase()}  (${state.casRef})`, ML, y);
+  y += 7;
+  doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+  doc.setTextColor(74, 63, 53);
+  doc.text(state.inv.join('   ·   '), ML, y);
+  y += 5;
+  doc.setDrawColor(200, 180, 160);
+  doc.setLineWidth(0.4);
+  doc.line(ML, y, W - MR, y);
+  y += 8;
+
+  function sectionTitle(txt) {
+    checkPage(12);
+    doc.setFillColor(245, 237, 230);
+    doc.rect(ML, y - 4, CW, 8, 'F');
+    doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(139, 69, 19);
+    doc.text(txt, ML + 3, y + 1);
+    y += 8;
+  }
+
+  function bodyText(txt) {
+    if (!txt) return;
+    doc.setFontSize(9.5); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(28, 23, 20);
+    const lines = doc.splitTextToSize(txt, CW);
+    lines.forEach(line => {
+      checkPage(LINE_H);
+      doc.text(line, ML, y);
+      y += LINE_H;
+    });
+    y += 3;
+  }
+
+  function labelValue(label, val) {
+    if (!val) return;
+    checkPage(12);
+    doc.setFontSize(8); doc.setFont('helvetica', 'bold');
+    doc.setTextColor(139, 100, 70);
+    doc.text(label.toUpperCase(), ML, y);
+    y += 4.5;
+    bodyText(val);
+  }
+
+  // BLOC 1
+  sectionTitle('BLOC 1 — ELS PERSONATGES');
+  bodyText(state.b1);
+
+  // BLOC 2
+  sectionTitle('BLOC 2 — LA SITUACIÓ');
+  bodyText(state.b2);
+
+  // BLOC 3
+  sectionTitle('BLOC 3 — EL GEST RUPTURISTA');
+  bodyText(state.b3);
+
+  // BLOC 4
+  sectionTitle('BLOC 4 — CONCLUSIONS INDIVIDUALS');
+  const rols = ['Fets', 'Persones', 'Reflexió'];
+  state.inv.forEach((n, i) => {
+    labelValue(`${n} — ${rols[i]}`, [state.c1, state.c2, state.c3][i]);
+  });
+
+  // ORGANITZACIÓ
+  sectionTitle('ORGANITZACIÓ DE LA PRESENTACIÓ');
+  labelValue('Bloc 1 — exposa', state.r1);
+  labelValue('Bloc 2 — exposa', state.r2);
+  labelValue('Bloc 3 — exposa', state.r3);
+  labelValue('Suport visual', state.tool);
+  if (state.visual) labelValue('Contingut visual previst', state.visual);
+
+  // REFLEXIÓ
+  sectionTitle('REFLEXIÓ DEL GRUP');
+  bodyText(state.refl);
+
+  // Footer
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(160, 140, 120);
+    doc.text(`Pàg. ${p} / ${pages}`, W - MR, 290, { align: 'right' });
+    doc.text('Investigació Bíblica — Preparació de la Presentació Oral', ML, 290);
+  }
+
+  const filename = `Presentacio_${state.cas.replace(/[^a-zA-Z]/g,'_')}_${state.inv[0].split(' ')[0]}.pdf`;
+  doc.save(filename);
+}
+</script>
+</body>
+</html>
