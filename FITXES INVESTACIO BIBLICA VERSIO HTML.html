@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bloc de l'Investigador — Investigació Bíblica</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --cream:#FAF8F4; --white:#FFFFFF;
+  --ink:#1C1714; --ink-mid:#4A3F35; --ink-light:#7A6A5A;
+  --accent:#7B3F1A; --accent-lt:#C4724A; --accent-pale:#F6EDE6;
+  --border:#DDD5C8; --border-lt:#EDE6DC;
+  --ok:#2D6A4F; --ok-pale:#E8F5EE;
+  --error:#9B2335; --error-pale:#FDECEA;
+  --gold:#B8860B; --gold-pale:#FDF6E3;
+  --shadow:rgba(28,23,20,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--cream);font-family:'Source Serif 4',Georgia,serif;color:var(--ink);min-height:100vh}
+
+/* PROGRESS */
+.prog{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;height:50px;gap:0;overflow-x:auto}
+.ps{display:flex;align-items:center;gap:.4rem;font-size:.7rem;font-weight:700;color:var(--ink-light);letter-spacing:.05em;text-transform:uppercase;padding:0 .6rem;white-space:nowrap;transition:color .3s;flex-shrink:0}
+.ps.active{color:var(--accent)}
+.ps.done{color:var(--ok)}
+.ps .dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0;transition:all .3s}
+.ps.active .dot{border-color:var(--accent);background:var(--accent);color:#fff}
+.ps.done .dot{border-color:var(--ok);background:var(--ok);color:#fff}
+.ps-sep{width:1px;height:18px;background:var(--border);flex-shrink:0}
+
+/* MAIN */
+.main{max-width:780px;margin:0 auto;padding:70px 1.5rem 4rem}
+.screen{display:none;animation:fi .35s ease}
+.screen.active{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* HEADER */
+.ph{margin-bottom:2rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
+.pl{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem}
+.pt{font-family:'Playfair Display',serif;font-size:1.7rem;font-weight:600;color:var(--ink);line-height:1.2;margin-bottom:.35rem}
+.ps2{font-size:.95rem;color:var(--ink-mid);font-style:italic;line-height:1.5}
+
+/* CASE SELECTOR */
+.cg{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;margin-bottom:.5rem}
+@media(max-width:580px){.cg{grid-template-columns:1fr 1fr}}
+.cb{border:1.5px solid var(--border);background:var(--white);border-radius:6px;padding:.65rem .4rem;text-align:center;cursor:pointer;transition:all .2s;line-height:1.3}
+.cb:hover,.cb:focus{border-color:var(--accent-lt);background:var(--accent-pale);outline:none}
+.cb.sel{border-color:var(--accent);background:var(--accent-pale);box-shadow:0 0 0 3px rgba(123,63,26,.1)}
+.cb-n{font-size:.65rem;font-weight:700;color:var(--accent);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.2rem}
+.cb-t{font-size:.82rem;font-weight:600;color:var(--ink)}
+.cb-r{font-size:.68rem;color:var(--ink-light);font-style:italic}
+
+/* INVESTIGATORS */
+.ig{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem}
+@media(max-width:560px){.ig{grid-template-columns:1fr}}
+
+/* FIELD */
+.field{margin-bottom:1.5rem}
+.fl{display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem}
+.fl label{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mid)}
+.fh{font-size:.85rem;color:var(--ink-light);font-style:italic;margin-bottom:.5rem;line-height:1.5}
+input[type=text],textarea{width:100%;font-family:'Source Serif 4',Georgia,serif;font-size:1rem;color:var(--ink);background:var(--white);border:1.5px solid var(--border);border-radius:4px;padding:.65rem .9rem;transition:border-color .2s,box-shadow .2s;outline:none;line-height:1.6}
+input[type=text]:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(123,63,26,.1)}
+input[type=text].err,textarea.err{border-color:var(--error);box-shadow:0 0 0 3px rgba(155,35,53,.08)}
+textarea{resize:vertical}
+
+/* SECTION CARD */
+.sc{background:var(--white);border:1px solid var(--border);border-radius:8px;margin-bottom:1.5rem;overflow:hidden;box-shadow:0 2px 8px var(--shadow)}
+.sc-h{background:var(--accent-pale);border-bottom:1px solid var(--border);padding:.9rem 1.3rem;display:flex;align-items:center;gap:.8rem}
+.sc-num{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-family:'Playfair Display',serif;font-size:.95rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sc-ti{font-family:'Playfair Display',serif;font-size:1rem;font-weight:600;color:var(--ink)}
+.sc-de{font-size:.82rem;color:var(--ink-mid);font-style:italic;margin-top:.1rem}
+.sc-b{padding:1.3rem}
+
+/* PROVE ROW */
+.pr-row{border:1px solid var(--border);border-radius:6px;padding:1rem;margin-bottom:1rem;background:var(--cream)}
+.pr-name{font-size:.78rem;font-weight:700;color:var(--accent);letter-spacing:.05em;text-transform:uppercase;margin-bottom:.6rem;display:flex;align-items:center;gap:.5rem}
+
+/* TESTIMONI ROW */
+.tr-row{border:1px solid var(--border);border-radius:6px;padding:1rem;margin-bottom:1rem;background:var(--cream)}
+.tr-hdr{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
+.tr-avatar{width:42px;height:42px;border-radius:50%;background:var(--accent);color:#fff;font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tr-info .tn{font-size:.95rem;font-weight:600;color:var(--ink)}
+.tr-info .tr{font-size:.78rem;color:var(--ink-light);font-style:italic}
+
+/* TTS */
+.tts{background:none;border:1px solid var(--border);color:var(--ink-mid);border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.8rem;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.tts:hover{border-color:var(--accent);background:var(--accent-pale);color:var(--accent)}
+.tts:focus{outline:2px solid var(--accent);outline-offset:2px}
+
+/* INFO BOX */
+.ib{background:var(--gold-pale);border:1px solid rgba(184,134,11,.25);border-radius:6px;padding:.65rem .9rem;margin-bottom:1.2rem;font-size:.85rem;color:var(--ink-mid);line-height:1.5}
+.ib strong{color:var(--gold)}
+
+/* PREGUNTA INCÒMODA */
+.qi{background:var(--white);border:2px solid var(--accent);border-radius:8px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+.qi-label{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:.5rem;display:flex;align-items:center;gap:.5rem}
+.qi-text{font-size:1.05rem;font-weight:600;color:var(--ink);line-height:1.5}
+
+/* CONCLUSIÓ INDIVIDUAL */
+.ci-card{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:1.2rem}
+.ci-hdr{background:var(--accent-pale);padding:.8rem 1.1rem;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem}
+.ci-role{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:.2rem}
+.ci-name{font-size:.95rem;font-weight:600;color:var(--ink)}
+.ci-q{font-size:.9rem;color:var(--ink-mid);line-height:1.5;margin-top:.3rem;font-style:italic}
+.ci-body{padding:1rem}
+
+/* ERROR */
+.emsg{background:var(--error-pale);border:1px solid rgba(155,35,53,.25);border-radius:6px;padding:.65rem .9rem;font-size:.85rem;color:var(--error);margin-bottom:1rem;display:none}
+.emsg.vis{display:block}
+
+/* BUTTONS */
+.btn-row{display:flex;gap:.8rem;margin-top:1.8rem;align-items:center;flex-wrap:wrap}
+.btn{font-family:'Source Serif 4',serif;font-size:.88rem;font-weight:600;padding:.7rem 1.8rem;border-radius:4px;border:none;cursor:pointer;transition:all .2s;letter-spacing:.02em}
+.btn-p{background:var(--accent);color:#fff}
+.btn-p:hover{background:#5A2D10}
+.btn-p:disabled{background:var(--border);color:var(--ink-light);cursor:not-allowed}
+.btn-s{background:transparent;color:var(--ink-mid);border:1.5px solid var(--border)}
+.btn-s:hover{border-color:var(--ink-mid)}
+.btn-d{background:var(--ok);color:#fff;font-size:.95rem;padding:.8rem 2.2rem}
+.btn-d:hover{background:#1E4D38}
+
+/* SUMMARY */
+.sb{background:var(--white);border:1px solid var(--border);border-radius:8px;padding:1.3rem;margin-bottom:1.2rem;box-shadow:0 2px 6px var(--shadow)}
+.st{font-family:'Playfair Display',serif;font-size:.95rem;font-weight:600;color:var(--accent);margin-bottom:.7rem;padding-bottom:.4rem;border-bottom:1px solid var(--border-lt)}
+.sr{margin-bottom:.5rem}
+.sl{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-light)}
+.sv{font-size:.92rem;color:var(--ink);line-height:1.5;margin-top:.1rem}
+
+/* FINAL */
+.final-block{text-align:center;padding:2rem 0}
+.final-block .icon{font-size:2.8rem;margin-bottom:1rem}
+.final-block h2{font-family:'Playfair Display',serif;font-size:1.7rem;color:var(--ink);margin-bottom:.5rem}
+.final-block p{color:var(--ink-mid);font-size:.95rem;line-height:1.6;max-width:460px;margin:0 auto 1.5rem}
+</style>
+</head>
+<body>
+
+<!-- PROGRESS BAR -->
+<nav class="prog" aria-label="Progrés de la investigació">
+  <div class="ps active" id="ps0"><div class="dot">1</div><span>Grup</span></div>
+  <div class="ps-sep"></div>
+  <div class="ps" id="ps1"><div class="dot">2</div><span>Escena</span></div>
+  <div class="ps-sep"></div>
+  <div class="ps" id="ps2"><div class="dot">3</div><span>Proves</span></div>
+  <div class="ps-sep"></div>
+  <div class="ps" id="ps3"><div class="dot">4</div><span>Testimonis</span></div>
+  <div class="ps-sep"></div>
+  <div class="ps" id="ps4"><div class="dot">5</div><span>Reconstrucció</span></div>
+  <div class="ps-sep"></div>
+  <div class="ps" id="ps5"><div class="dot">6</div><span>Conclusions</span></div>
+  <div class="ps-sep"></div>
+  <div class="ps" id="ps6"><div class="dot">7</div><span>PDF</span></div>
+</nav>
+
+<main class="main" id="main-content">
+
+<!-- S0: GRUP -->
+<section class="screen active" id="s0" aria-labelledby="s0-title">
+  <div class="ph">
+    <div class="pl">Inici</div>
+    <h1 class="pt" id="s0-title">Bloc de l'Investigador</h1>
+    <p class="ps2">Seleccioneu el vostre cas i introduïu els noms. Podeu escoltar qualsevol instrucció prement el botó 🔊.</p>
+  </div>
+  <div class="field">
+    <div class="fl">
+      <label>Cas assignat</label>
+      <button class="tts" aria-label="Llegir instrucció del cas" onclick="speak('Seleccioneu el vostre cas assignat.')">🔊</button>
+    </div>
+    <div class="cg" role="group" aria-label="Selecció del cas">
+      <div class="cb" tabindex="0" role="radio" aria-checked="false" onclick="selCase(this,'L\'Adultera','Jn 8:1-11',1)" onkeydown="kbClick(event,this)">
+        <div class="cb-n">Cas I</div><div class="cb-t">L'Adultera</div><div class="cb-r">Jn 8</div>
+      </div>
+      <div class="cb" tabindex="0" role="radio" aria-checked="false" onclick="selCase(this,'El Leprós','Mc 1:40-45',2)" onkeydown="kbClick(event,this)">
+        <div class="cb-n">Cas II</div><div class="cb-t">El Leprós</div><div class="cb-r">Mc 1</div>
+      </div>
+      <div class="cb" tabindex="0" role="radio" aria-checked="false" onclick="selCase(this,'El Fariseu','Mc 3:1-6',3)" onkeydown="kbClick(event,this)">
+        <div class="cb-n">Cas III</div><div class="cb-t">El Fariseu</div><div class="cb-r">Mc 3</div>
+      </div>
+      <div class="cb" tabindex="0" role="radio" aria-checked="false" onclick="selCase(this,'El Temple','Jn 2:13-22',4)" onkeydown="kbClick(event,this)">
+        <div class="cb-n">Cas IV</div><div class="cb-t">El Temple</div><div class="cb-r">Jn 2</div>
+      </div>
+      <div class="cb" tabindex="0" role="radio" aria-checked="false" onclick="selCase(this,'La Dona Pecadora','Lc 7:36-50',5)" onkeydown="kbClick(event,this)">
+        <div class="cb-n">Cas V</div><div class="cb-t">La Dona Pecadora</div><div class="cb-r">Lc 7</div>
+      </div>
+    </div>
+  </div>
+  <div class="field">
+    <div class="fl">
+      <label>Noms dels investigadors</label>
+      <button class="tts" aria-label="Llegir instrucció dels noms" onclick="speak('Ompliu els tres camps amb el nom complet de cada investigador.')">🔊</button>
+    </div>
+    <p class="fh">Tots els membres del grup han de constar.</p>
+    <div class="ig">
+      <input id="n1" type="text" placeholder="Investigador 1 — nom i cognoms" aria-label="Nom de l'investigador 1">
+      <input id="n2" type="text" placeholder="Investigador 2 — nom i cognoms" aria-label="Nom de l'investigador 2">
+      <input id="n3" type="text" placeholder="Investigador 3 — nom i cognoms" aria-label="Nom de l'investigador 3">
+    </div>
+  </div>
+  <div class="emsg" id="e0">Heu de triar el cas i omplir els tres noms.</div>
+  <div class="btn-row">
+    <button class="btn btn-p" onclick="next(0)">Continuar →</button>
+  </div>
+</section>
+
+<!-- S1: ESCENA -->
+<section class="screen" id="s1" aria-labelledby="s1-title">
+  <div class="ph">
+    <div class="pl" id="s1-pl">Secció 1</div>
+    <h1 class="pt" id="s1-title">L'Escena</h1>
+    <p class="ps2" id="s1-desc"></p>
+  </div>
+  <div class="ib" id="s1-ctx"></div>
+  <div class="field">
+    <div class="fl">
+      <label for="escena">Descriu el lloc i el moment amb les teves paraules</label>
+      <button class="tts" aria-label="Llegir pregunta" id="s1-tts" onclick="speak(document.getElementById('s1-tts').dataset.q)">🔊</button>
+    </div>
+    <textarea id="escena" rows="6" aria-label="Descripció de l'escena" placeholder="Escriu aquí la teva descripció..."></textarea>
+  </div>
+  <div class="emsg" id="e1">Cal descriure l'escena abans de continuar.</div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="prev(1)">← Tornar</button>
+    <button class="btn btn-p" onclick="next(1)">Continuar →</button>
+  </div>
+</section>
+
+<!-- S2: PROVES -->
+<section class="screen" id="s2" aria-labelledby="s2-title">
+  <div class="ph">
+    <div class="pl">Secció 2</div>
+    <h1 class="pt" id="s2-title">Les Proves</h1>
+    <p class="ps2">Per a cada prova material: descriu el que veus i el que et crida l'atenció.</p>
+  </div>
+  <div id="proves-container"></div>
+  <div class="emsg" id="e2">Cal omplir totes les proves abans de continuar.</div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="prev(2)">← Tornar</button>
+    <button class="btn btn-p" onclick="next(2)">Continuar →</button>
+  </div>
+</section>
+
+<!-- S3: TESTIMONIS -->
+<section class="screen" id="s3" aria-labelledby="s3-title">
+  <div class="ph">
+    <div class="pl">Secció 3</div>
+    <h1 class="pt" id="s3-title">Els Testimonis</h1>
+    <p class="ps2">Per a cada testimoni: anota el que declara i el que creus que amaga o no diu.</p>
+  </div>
+  <div id="test-container"></div>
+  <div class="emsg" id="e3">Cal omplir tots els testimonis abans de continuar.</div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="prev(3)">← Tornar</button>
+    <button class="btn btn-p" onclick="next(3)">Continuar →</button>
+  </div>
+</section>
+
+<!-- S4: RECONSTRUCCIÓ -->
+<section class="screen" id="s4" aria-labelledby="s4-title">
+  <div class="ph">
+    <div class="pl">Secció 4</div>
+    <h1 class="pt" id="s4-title">Reconstrucció dels Fets</h1>
+    <p class="ps2">Explica amb les teves paraules el que ha passat. Usa les proves i els testimonis com a base.</p>
+  </div>
+  <div class="field">
+    <div class="fl">
+      <label for="recon">Reconstrucció</label>
+      <button class="tts" aria-label="Llegir instrucció" onclick="speak('Explica amb les teves paraules el que ha passat. Usa les proves i els testimonis com a base.')">🔊</button>
+    </div>
+    <textarea id="recon" rows="12" aria-label="Reconstrucció dels fets" placeholder="Escriu aquí la reconstrucció dels fets..."></textarea>
+  </div>
+  <div class="emsg" id="e4">Cal escriure la reconstrucció abans de continuar.</div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="prev(4)">← Tornar</button>
+    <button class="btn btn-p" onclick="next(4)">Continuar →</button>
+  </div>
+</section>
+
+<!-- S5: PREGUNTA INCÒMODA + CONCLUSIONS -->
+<section class="screen" id="s5" aria-labelledby="s5-title">
+  <div class="ph">
+    <div class="pl">Secció 5 i 6</div>
+    <h1 class="pt" id="s5-title">Pregunta i Conclusions</h1>
+    <p class="ps2">Primer responeu junts la pregunta incòmoda. Després, cada investigador respon la seva conclusió individual.</p>
+  </div>
+
+  <!-- Pregunta incòmoda -->
+  <div class="sc">
+    <div class="sc-h">
+      <div class="sc-num">5</div>
+      <div>
+        <div class="sc-ti">La Pregunta Incòmoda</div>
+        <div class="sc-de">Resposta del grup</div>
+      </div>
+    </div>
+    <div class="sc-b">
+      <div class="qi" id="qi-box" role="region" aria-label="Pregunta incòmoda del grup">
+        <div class="qi-label">
+          Pregunta del grup
+          <button class="tts" id="qi-tts" aria-label="Llegir pregunta incòmoda" onclick="speak(document.getElementById('qi-tts').dataset.q)">🔊</button>
+        </div>
+        <div class="qi-text" id="qi-text"></div>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <textarea id="qi-ans" rows="5" aria-label="Resposta a la pregunta incòmoda" placeholder="Resposta del grup..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conclusions individuals -->
+  <div class="sc">
+    <div class="sc-h">
+      <div class="sc-num">6</div>
+      <div>
+        <div class="sc-ti">Conclusions Individuals</div>
+        <div class="sc-de">Cada investigador respon la seva pregunta. No us la podeu copiar.</div>
+      </div>
+    </div>
+    <div class="sc-b" id="conc-container"></div>
+  </div>
+
+  <div class="emsg" id="e5">Cal respondre la pregunta incòmoda i les tres conclusions individuals.</div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="prev(5)">← Tornar</button>
+    <button class="btn btn-p" onclick="next(5)">Revisar →</button>
+  </div>
+</section>
+
+<!-- S6: REVISIÓ + PDF -->
+<section class="screen" id="s6" aria-labelledby="s6-title">
+  <div class="ph">
+    <div class="pl">Revisió final</div>
+    <h1 class="pt" id="s6-title">Reviseu i descarregueu</h1>
+    <p class="ps2">Comproveu que tot és correcte. Descarregueu el PDF i lliureu-lo al professor.</p>
+  </div>
+  <div id="summary"></div>
+  <div class="final-block">
+    <div class="icon">📋</div>
+    <h2>Bloc tancat!</h2>
+    <p>Descarregueu el document i envieu-lo al professor pel Google Classroom.</p>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn btn-s" onclick="prev(6)">← Tornar a editar</button>
+      <button class="btn btn-d" onclick="genPDF()">⬇ Descarregar PDF</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ── CASES DATA ────────────────────────────────────────────
+const CASES = {
+  1:{
+    escena:"Ets a l'esplanada davant del Temple de Jerusalem, a primera hora del matí. Un grup de fariseus irromp a la plaça arrossegant una dona. Al voltant, una multitud que s'atura a mirar. Alguns porten pedres a les mans.",
+    proves:[
+      {nom:"El Pergamí de la Llei", q1:"Descriu el pergamí: quin aspecte té, on és, en quin estat?", q2:"Què et crida l'atenció del que hi diu o del que hi falta?"},
+      {nom:"Les Pedres al Terra",   q1:"Descriu les pedres: quantes, on són, com estan col·locades?", q2:"Què et fa pensar la seva posició al terra?"},
+      {nom:"L'Escriptura a la Sorra", q1:"Descriu el que veus a la sorra: forma, mida, ubicació.", q2:"Quin valor té el que hi ha escrit si no se sap el contingut?"},
+    ],
+    testimonis:[
+      {nom:"La Dona Acusada",  rol:"Acusada d'adulteri, condemnada a lapidació"},
+      {nom:"El Fariseu",       rol:"Mestre de la Llei, organitzador del judici"},
+      {nom:"El Deixeble",      rol:"Seguidor del Mestre, testimoni directe"},
+    ],
+    qi:"Hi ha algú en aquesta escena que hauria d'estar present i no hi és. Qui és? I per quin motiu creus que no hi és?",
+    conc:[
+      {rol:"Fets",     nom_ph:"Investigador 1", q:"Quines proves demostren que el judici d'aquesta dona no era just? Argumenta-ho a partir del que has trobat a l'escena."},
+      {rol:"Persones", nom_ph:"Investigador 2", q:"Qui canvia més al llarg d'aquesta escena: la dona, els fariseus o Jesús? Justifica la teva resposta amb el que han dit els testimonis."},
+      {rol:"Reflexió", nom_ph:"Investigador 3", q:"Hi ha algú en aquesta escena que hauria d'estar present i no hi és. Creus que això passa sovint? Posa un exemple si vols."},
+    ],
+  },
+  2:{
+    escena:"Ets a un camí pedregós als afores d'un poble de Galilea. A terra, una campaneta de bronze i unes benes de lli abandonades. El poble és visible al fons. A prop teu, un home que mira les seves mans amb una expressió que no has vist mai.",
+    proves:[
+      {nom:"La Campaneta d'Avís",     q1:"Descriu la campaneta: material, mida, estat de conservació.", q2:"Per a què servia exactament? Que implica trobar-la aquí abandonada?"},
+      {nom:"Les Benes Abandonades",   q1:"Descriu les benes: de quin material, com estan, on exactament?", q2:"Quina conclusió pots treure del fet que hagin estat tetes fora amb pressa?"},
+      {nom:"El Certificat Sacerdotal",q1:"Descriu el document: suport, segell, estat de signatura.", q2:"Quin és el procediment legal que hauria de seguir? S'ha seguit?"},
+    ],
+    testimonis:[
+      {nom:"El Leprós Curat",        rol:"Home curat d'una malaltia incurable"},
+      {nom:"El Sacerdot del Temple", rol:"Autoritat religiosa oficial"},
+      {nom:"El Veí del Poble",       rol:"Habitant del poble, testimoni dels fets"},
+    ],
+    qi:"El leprós portava anys sense que ningú el toqués. Quant de temps creus que pot aguantar una persona sense contacte físic amb ningú? Què li fa, a una persona, no ser tocada?",
+    conc:[
+      {rol:"Fets",     nom_ph:"Investigador 1", q:"Descriu, pas a pas, el que ha passat en aquest camí. Quines proves ho confirmen? Hi ha alguna cosa que no quadra amb la Llei?"},
+      {rol:"Persones", nom_ph:"Investigador 2", q:"Compara com tracten el leprós el sacerdot i Jesús. Quin dels dos compleix millor, al teu entendre, la funció d'un líder religiós?"},
+      {rol:"Reflexió", nom_ph:"Investigador 3", q:"Hi ha persones avui que viuen apartades, com vivia aquest home. Quin gest petit podria canviar-ho? Posa un exemple concret si vols."},
+    ],
+  },
+  3:{
+    escena:"Ets dins d'una sinagoga de poble, el dia de sàbat. La sala és austera: parets de pedra, bancs als costats, un faristol al centre. La llum entra per una finestra lateral. La tensió es nota abans que ningú parli.",
+    proves:[
+      {nom:"El Rotlle del Sàbat",  q1:"Descriu el rotlle: ubicació, estat, passatge obert.", q2:"Quin és el manament del sàbat i com s'aplica a la situació d'avui?"},
+      {nom:"La Mà Atrofiada",      q1:"Descriu la mà: aspecte físic, posició, antiguitat de la lesió.", q2:"Representa una urgència mèdica? Permet la Llei curar-la en sàbat?"},
+      {nom:"La Porta Tancada",     q1:"Descriu la porta: material, estat, com està tancada.", q2:"Qui pot ser a dins i qui queda fora? Quin missatge envia una porta tancada?"},
+    ],
+    testimonis:[
+      {nom:"L'Home amb la Mà Curada", rol:"Home amb mà atrofiada, curat en sàbat"},
+      {nom:"El Fariseu de la Sinagoga",rol:"Mestre de la Llei, guardià del sàbat"},
+      {nom:"El Deixeble",             rol:"Seguidor del Mestre, testimoni directe"},
+    ],
+    qi:"Els fariseus saben que l'home pateix. I no fan res. Creus que és possible creure sincerament en una norma i, al mateix temps, usar-la per fer mal a algú?",
+    conc:[
+      {rol:"Fets",     nom_ph:"Investigador 1", q:"Descriu el conflicte que es produeix a la sinagoga. Qui té la Llei al seu costat? Qui té raó? Poden ser les dues coses alhora?"},
+      {rol:"Persones", nom_ph:"Investigador 2", q:"El fariseu creu sincerament que defensa quelcom sagrat. Pots entendre el seu punt de vista? On creus que s'equivoca?"},
+      {rol:"Reflexió", nom_ph:"Investigador 3", q:"Pensa en una norma que en algun moment ha perjudicat algú en lloc de protegir-lo. Com s'hauria pogut fer diferent?"},
+    ],
+  },
+  4:{
+    escena:"Ets a l'atri exterior del Temple de Jerusalem. Les taules estan bolcades. Monedes escampades per terra. Gàbies obertes. Coloms que volen cap al cel. Una corda trençada a mà, abandonada al terra.",
+    proves:[
+      {nom:"La Taula de Canvi Bolcada",q1:"Descriu la taula: posició, contingut escampat, tipus de monedes.", q2:"Quin servei oferia el canvista? Era un servei necessari o abusiu?"},
+      {nom:"La Corda Feta Fuet",       q1:"Descriu el fuet: materials, construcció, mida.", q2:"Fer un fuet porta uns minuts. Quin implicació té que s'hagués fabricat aquí?"},
+      {nom:"El Colom Alliberat",       q1:"Descriu la gàbia: estat, posició, el que en queda.", q2:"Qui comprava els coloms i per a quin ús? Quin significat té alliberar-los?"},
+    ],
+    testimonis:[
+      {nom:"El Venedor Expulsat",  rol:"Comerciant autoritzat, expulsat del Temple"},
+      {nom:"El Canvista de Moneda",rol:"Canvista autoritzat del Temple"},
+      {nom:"La Pelegrina Pobra",   rol:"Pelegrina de lluny, testimoni dels fets"},
+      {nom:"El Gran Sacerdot",     rol:"Màxima autoritat del Temple, responsable del culte"},
+    ],
+    qi:"L'Atri dels Gentils era l'únic espai del Temple on podien entrar els que no eren jueus per pregar. Estava ple de negoci i cridòria. A qui perjudicava més, això?",
+    conc:[
+      {rol:"Fets",     nom_ph:"Investigador 1", q:"Per quin motiu Jesús actua d'aquesta manera al Temple? Era una reacció impulsiva o premeditada? Justifica-ho amb les proves trobades."},
+      {rol:"Persones", nom_ph:"Investigador 2", q:"Dels quatre testimonis, quin t'ha semblat més honest? Quin creus que amaga quelcom? Raona la teva resposta."},
+      {rol:"Reflexió", nom_ph:"Investigador 3", q:"Una institució creada per apropar la gent a Déu s'havia convertit en una barrera. Creus que això pot passar avui? Posa un exemple si vols."},
+    ],
+  },
+  5:{
+    escena:"Ets a la sala de menjar d'una casa benestant de Galilea, a la nit. Coixins a terra, una taula baixa amb menjar, llums d'oli. Un vas d'alabastre trencat al terra, el perfum escampat. Una palangana d'argila amb una mica d'aigua al fons, prop de la porta.",
+    proves:[
+      {nom:"L'Àmfora de Perfum Trencada",q1:"Descriu l'àmfora: material, forma, estat, el que en queda.", q2:"Quin valor tenia aquest perfum? Quin gest representa trencar-lo i abocar-lo tot?"},
+      {nom:"La Palangana Oblidada",       q1:"Descriu la palangana: material, contingut, ubicació exacta.", q2:"Per a quin ús hauria de servir aquesta palangana en un sopar? Ha servit per a algú avui?"},
+      {nom:"La Bossa de Diners de Simó",  q1:"Descriu la bossa: material, estat, les monedes al costat.", q2:"Compara el valor de la bossa de Simó amb el del perfum de la dona."},
+    ],
+    testimonis:[
+      {nom:"La Dona Pecadora", rol:"Dona coneguda per la seva mala reputació"},
+      {nom:"Simó el Fariseu",  rol:"Amfitrió del sopar, fariseu"},
+      {nom:"El Convidat al Sopar", rol:"Convidat, testimoni directe"},
+    ],
+    qi:"Simó va convidar Jesús a casa seva. Però no va fer cap dels tres gestos bàsics d'hospitalitat. La dona, que no estava convidada, els va fer tots. Qui va tractar Jesús amb més dignitat en aquesta sala?",
+    conc:[
+      {rol:"Fets",     nom_ph:"Investigador 1", q:"Reconstrueix el que ha passat en aquest sopar a partir de les proves i els testimonis. Qui fa què, i en quin ordre?"},
+      {rol:"Persones", nom_ph:"Investigador 2", q:"Simó jutja la dona sense dir-li res directament. Com et sents quan algú et jutja en silenci? Creus que Simó tenia raó en el que pensava d'ella?"},
+      {rol:"Reflexió", nom_ph:"Investigador 3", q:"Jesús veu en aquesta dona quelcom que Simó no veu. Creus que la reputació d'una persona ens impedeix veure-la bé? Posa un exemple si vols."},
+    ],
+  },
+};
+
+// ── STATE ─────────────────────────────────────────────────
+const S = { cas:null, casId:null, ref:'', names:['','',''], escena:'',
+  proves:[], testimonis:[], recon:'', qi:'', conc:['','',''] };
+
+// ── TTS ───────────────────────────────────────────────────
+function speak(txt){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(txt);
+  u.lang='ca-ES'; u.rate=0.92;
+  const vs = window.speechSynthesis.getVoices();
+  const v = vs.find(v=>v.lang.startsWith('ca')) || vs.find(v=>v.lang.startsWith('es'));
+  if(v) u.voice=v;
+  window.speechSynthesis.speak(u);
+}
+window.speechSynthesis && window.speechSynthesis.addEventListener &&
+  window.addEventListener('load',()=>window.speechSynthesis.getVoices());
+
+// ── KEYBOARD ──────────────────────────────────────────────
+function kbClick(e,el){ if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();} }
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') window.speechSynthesis&&window.speechSynthesis.cancel();
+});
+
+// ── CASE SELECTION ────────────────────────────────────────
+function selCase(el, name, ref, id){
+  document.querySelectorAll('.cb').forEach(b=>{b.classList.remove('sel');b.setAttribute('aria-checked','false');});
+  el.classList.add('sel'); el.setAttribute('aria-checked','true');
+  S.cas=name; S.ref=ref; S.casId=id;
+}
+
+// ── PROGRESS ──────────────────────────────────────────────
+function setProgress(step){
+  for(let i=0;i<7;i++){
+    const el=document.getElementById('ps'+i);
+    el.classList.remove('active','done');
+    if(i<step) el.classList.add('done');
+    else if(i===step) el.classList.add('active');
+  }
+}
+function showScreen(n){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('s'+n).classList.add('active');
+  setProgress(n);
+  window.scrollTo({top:0,behavior:'smooth'});
+  window.speechSynthesis&&window.speechSynthesis.cancel();
+}
+
+// ── BUILD PROVES ──────────────────────────────────────────
+function buildProves(){
+  const c = CASES[S.casId];
+  const con = document.getElementById('proves-container');
+  con.innerHTML = c.proves.map((p,i)=>`
+    <div class="pr-row" role="group" aria-labelledby="pr-${i}-name">
+      <div class="pr-name" id="pr-${i}-name">
+        ${p.nom}
+        <button class="tts" aria-label="Llegir instruccions de la prova ${p.nom}"
+          onclick="speak('${p.nom}. ${p.q1}. ${p.q2}')">🔊</button>
+      </div>
+      <div class="field" style="margin-bottom:.8rem">
+        <div class="fl"><label for="p${i}a">${p.q1}</label></div>
+        <textarea id="p${i}a" rows="3" aria-label="${p.q1}" placeholder="Escriu aquí..."></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <div class="fl"><label for="p${i}b">${p.q2}</label></div>
+        <textarea id="p${i}b" rows="3" aria-label="${p.q2}" placeholder="Escriu aquí..."></textarea>
+      </div>
+    </div>`).join('');
+}
+
+// ── BUILD TESTIMONIS ──────────────────────────────────────
+function buildTestimonis(){
+  const c = CASES[S.casId];
+  const initials = ['A','B','C','D'];
+  document.getElementById('test-container').innerHTML = c.testimonis.map((t,i)=>`
+    <div class="tr-row" role="group" aria-labelledby="tr-${i}-name">
+      <div class="tr-hdr">
+        <div class="tr-avatar" aria-hidden="true">${initials[i]}</div>
+        <div class="tr-info">
+          <div class="tn" id="tr-${i}-name">${t.nom}</div>
+          <div class="tr">${t.rol}</div>
+        </div>
+        <button class="tts" style="margin-left:auto" aria-label="Llegir nom i rol de ${t.nom}"
+          onclick="speak('${t.nom}. ${t.rol}')">🔊</button>
+      </div>
+      <div class="field" style="margin-bottom:.8rem">
+        <div class="fl">
+          <label for="t${i}a">Què declara?</label>
+          <button class="tts" aria-label="Llegir pregunta" onclick="speak('Anota el que declara ${t.nom}.')">🔊</button>
+        </div>
+        <textarea id="t${i}a" rows="4" aria-label="Declaració de ${t.nom}" placeholder="Escriu aquí el que declara..."></textarea>
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <div class="fl">
+          <label for="t${i}b">Què creus que amaga o no diu?</label>
+          <button class="tts" aria-label="Llegir pregunta" onclick="speak('Què creus que amaga o no diu ${t.nom}?')">🔊</button>
+        </div>
+        <textarea id="t${i}b" rows="3" aria-label="El que amaga ${t.nom}" placeholder="Escriu aquí la teva hipòtesi..."></textarea>
+      </div>
+    </div>`).join('');
+}
+
+// ── BUILD CONCLUSIONS ─────────────────────────────────────
+function buildConclusions(){
+  const c = CASES[S.casId];
+  document.getElementById('conc-container').innerHTML = c.conc.map((cc,i)=>`
+    <div class="ci-card">
+      <div class="ci-hdr" role="heading" aria-level="3">
+        <div>
+          <div class="ci-role">Investigador ${i+1} — ${cc.rol}</div>
+          <div class="ci-name" id="ci-name-${i}">${S.names[i]||cc.nom_ph}</div>
+          <div class="ci-q" id="ci-q-${i}">${cc.q}</div>
+        </div>
+        <button class="tts" aria-label="Llegir pregunta de conclusió" style="flex-shrink:0"
+          onclick="speak('${cc.q}')">🔊</button>
+      </div>
+      <div class="ci-body">
+        <textarea id="c${i}" rows="6" aria-label="Conclusió de ${S.names[i]||'Investigador '+(i+1)}" placeholder="Escriu aquí la conclusió personal..."></textarea>
+      </div>
+    </div>`).join('');
+  // Pregunta incòmoda
+  const qi = CASES[S.casId].qi;
+  document.getElementById('qi-text').textContent = qi;
+  document.getElementById('qi-tts').dataset.q = qi;
+}
+
+// ── BUILD S1 ──────────────────────────────────────────────
+function buildS1(){
+  const c = CASES[S.casId];
+  document.getElementById('s1-pl').textContent = `Cas ${S.casId} — ${S.cas} (${S.ref})`;
+  document.getElementById('s1-desc').textContent = c.escena;
+  const btn = document.getElementById('s1-tts');
+  btn.dataset.q = 'Descriu el lloc i el moment amb les teves paraules. ' + c.escena;
+  document.getElementById('s1-ctx').innerHTML =
+    `<strong>L'escena:</strong> ${c.escena}`;
+}
+
+// ── NAVIGATION ────────────────────────────────────────────
+function next(from){
+  if(from===0){
+    S.names=[document.getElementById('n1').value.trim(),
+             document.getElementById('n2').value.trim(),
+             document.getElementById('n3').value.trim()];
+    const err = !S.cas || !S.names[0]||!S.names[1]||!S.names[2];
+    document.getElementById('e0').classList.toggle('vis',err);
+    ['n1','n2','n3'].forEach((id,i)=>document.getElementById(id).classList.toggle('err',!S.names[i]));
+    if(err) return;
+    buildS1(); buildProves(); buildTestimonis(); buildConclusions();
+    showScreen(1);
+  } else if(from===1){
+    S.escena = document.getElementById('escena').value.trim();
+    const err = !S.escena;
+    document.getElementById('e1').classList.toggle('vis',err);
+    document.getElementById('escena').classList.toggle('err',err);
+    if(err) return;
+    showScreen(2);
+  } else if(from===2){
+    const c = CASES[S.casId];
+    S.proves = c.proves.map((_,i)=>({
+      nom: c.proves[i].nom,
+      a: document.getElementById('p'+i+'a').value.trim(),
+      b: document.getElementById('p'+i+'b').value.trim(),
+    }));
+    const err = S.proves.some(p=>!p.a||!p.b);
+    document.getElementById('e2').classList.toggle('vis',err);
+    if(err) return;
+    showScreen(3);
+  } else if(from===3){
+    const c = CASES[S.casId];
+    S.testimonis = c.testimonis.map((_,i)=>({
+      nom: c.testimonis[i].nom,
+      a: document.getElementById('t'+i+'a').value.trim(),
+      b: document.getElementById('t'+i+'b').value.trim(),
+    }));
+    const err = S.testimonis.some(t=>!t.a||!t.b);
+    document.getElementById('e3').classList.toggle('vis',err);
+    if(err) return;
+    showScreen(4);
+  } else if(from===4){
+    S.recon = document.getElementById('recon').value.trim();
+    const err = !S.recon;
+    document.getElementById('e4').classList.toggle('vis',err);
+    document.getElementById('recon').classList.toggle('err',err);
+    if(err) return;
+    showScreen(5);
+  } else if(from===5){
+    S.qi = document.getElementById('qi-ans').value.trim();
+    S.conc = [0,1,2].map(i=>document.getElementById('c'+i).value.trim());
+    const err = !S.qi || S.conc.some(c=>!c);
+    document.getElementById('e5').classList.toggle('vis',err);
+    if(err) return;
+    buildSummary();
+    showScreen(6);
+  }
+}
+function prev(from){ showScreen(from-1); }
+
+// ── SUMMARY ───────────────────────────────────────────────
+function buildSummary(){
+  const c = CASES[S.casId];
+  const rols=['Fets','Persones','Reflexió'];
+  let html = `<div class="sb"><div class="st">Identificació</div>
+    <div class="sr"><div class="sl">Cas</div><div class="sv">${S.cas} (${S.ref})</div></div>
+    <div class="sr"><div class="sl">Investigadors</div><div class="sv">${S.names.join(' · ')}</div></div>
+  </div>
+  <div class="sb"><div class="st">L'Escena</div><div class="sv">${S.escena.replace(/\n/g,'<br>')}</div></div>
+  <div class="sb"><div class="st">Les Proves</div>
+    ${S.proves.map(p=>`<div class="sr"><div class="sl">${p.nom}</div>
+      <div class="sv">${p.a.replace(/\n/g,'<br>')}<br><em>${p.b.replace(/\n/g,'<br>')}</em></div></div>`).join('')}
+  </div>
+  <div class="sb"><div class="st">Els Testimonis</div>
+    ${S.testimonis.map(t=>`<div class="sr"><div class="sl">${t.nom}</div>
+      <div class="sv">${t.a.replace(/\n/g,'<br>')}<br><em>Amaga: ${t.b.replace(/\n/g,'<br>')}</em></div></div>`).join('')}
+  </div>
+  <div class="sb"><div class="st">Reconstrucció dels Fets</div><div class="sv">${S.recon.replace(/\n/g,'<br>')}</div></div>
+  <div class="sb"><div class="st">La Pregunta Incòmoda</div>
+    <div class="sr"><div class="sl">Pregunta</div><div class="sv">${CASES[S.casId].qi}</div></div>
+    <div class="sr"><div class="sl">Resposta del grup</div><div class="sv">${S.qi.replace(/\n/g,'<br>')}</div></div>
+  </div>
+  <div class="sb"><div class="st">Conclusions Individuals</div>
+    ${S.names.map((n,i)=>`<div class="sr">
+      <div class="sl">${n} — ${rols[i]}</div>
+      <div class="sv"><em>${CASES[S.casId].conc[i].q}</em><br>${S.conc[i].replace(/\n/g,'<br>')}</div>
+    </div>`).join('')}
+  </div>`;
+  document.getElementById('summary').innerHTML = html;
+}
+
+// ── PDF ───────────────────────────────────────────────────
+function genPDF(){
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm',format:'a4'});
+  const W=210, ML=18, MR=18, CW=W-ML-MR;
+  let y=18;
+  const LH=6;
+
+  function chk(n=10){if(y+n>278){doc.addPage();y=18;}}
+
+  // Header
+  doc.setFillColor(123,63,26);
+  doc.rect(0,0,W,13,'F');
+  doc.setTextColor(246,237,230); doc.setFontSize(9); doc.setFont('helvetica','bold');
+  doc.text('BLOC DE L\'INVESTIGADOR — INVESTIGACIÓ BÍBLICA',ML,8.5);
+  doc.setTextColor(196,114,74); doc.setFontSize(7); doc.setFont('helvetica','normal');
+  doc.text('4t ESO · Religió Catòlica · INS Flix',W-MR,8.5,{align:'right'});
+  y=22;
+
+  // Title
+  doc.setFontSize(16); doc.setFont('helvetica','bold'); doc.setTextColor(28,23,20);
+  doc.text(`CAS ${S.cas.toUpperCase()}  (${S.ref})`,ML,y); y+=7;
+  doc.setFontSize(10); doc.setFont('helvetica','normal'); doc.setTextColor(74,63,53);
+  doc.text(S.names.join('   ·   '),ML,y); y+=4;
+  doc.setDrawColor(200,180,160); doc.setLineWidth(0.4);
+  doc.line(ML,y,W-MR,y); y+=7;
+
+  function sec(t){
+    chk(10);
+    doc.setFillColor(246,237,230);
+    doc.rect(ML,y-4,CW,7,'F');
+    doc.setFontSize(9); doc.setFont('helvetica','bold'); doc.setTextColor(123,63,26);
+    doc.text(t,ML+2,y); y+=7;
+  }
+  function body(t){
+    if(!t)return;
+    doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(28,23,20);
+    doc.splitTextToSize(t,CW).forEach(l=>{chk(LH);doc.text(l,ML,y);y+=LH;});
+    y+=2;
+  }
+  function lv(l,v){
+    if(!v)return; chk(10);
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(123,90,60);
+    doc.text(l.toUpperCase(),ML,y); y+=4.5; body(v);
+  }
+
+  sec('1. L\'ESCENA'); body(S.escena);
+  sec('2. LES PROVES');
+  S.proves.forEach(p=>{lv(p.nom+' — El que veig',p.a); lv(p.nom+' — El que em crida l\'atenció',p.b);});
+  sec('3. ELS TESTIMONIS');
+  S.testimonis.forEach(t=>{lv(t.nom+' — Declaració',t.a); lv(t.nom+' — El que amaga',t.b);});
+  sec('4. RECONSTRUCCIÓ DELS FETS'); body(S.recon);
+  sec('5. LA PREGUNTA INCÒMODA');
+  body(CASES[S.casId].qi); lv('Resposta del grup',S.qi);
+  sec('6. CONCLUSIONS INDIVIDUALS');
+  const rols=['Fets','Persones','Reflexió'];
+  S.names.forEach((n,i)=>{
+    lv(`${n} (${rols[i]}) — Pregunta`,CASES[S.casId].conc[i].q);
+    lv(`${n} — Conclusió`,S.conc[i]);
+  });
+
+  // Footer
+  const pages=doc.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p);
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); doc.setTextColor(160,140,120);
+    doc.text(`Pàg. ${p}/${pages}`,W-MR,290,{align:'right'});
+    doc.text('Investigació Bíblica — Bloc de l\'Investigador',ML,290);
+  }
+  doc.save(`Bloc_${S.cas.replace(/[^a-zA-Z]/g,'_')}_${S.names[0].split(' ')[0]}.pdf`);
+}
+</script>
+</body>
+</html>
